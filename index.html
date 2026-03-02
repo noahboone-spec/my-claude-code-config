@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude Code Command Center</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0A0F1C;
+    color: #fff;
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+  }
+  .page {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  /* Hero */
+  .hero {
+    text-align: center;
+    padding: 60px 80px 50px;
+    background: linear-gradient(180deg, #0A0F1C 0%, #0F172A 50%, rgba(30,41,59,0.12) 100%);
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 16px;
+    border-radius: 100px;
+    background: rgba(34,211,238,0.08);
+    border: 1px solid rgba(34,211,238,0.25);
+    margin-bottom: 20px;
+  }
+  .badge .term { font-family: 'JetBrains Mono'; font-size: 12px; font-weight: 700; color: #22D3EE; }
+  .badge .label { font-family: 'JetBrains Mono'; font-size: 10px; font-weight: 600; color: #22D3EE; letter-spacing: 2px; }
+  h1 { font-size: 64px; font-weight: 800; color: #fff; line-height: 1.1; }
+  .subtitle { font-size: 36px; font-weight: 300; color: #94A3B8; margin-bottom: 20px; }
+  .divider-line { width: 120px; height: 2px; background: #22D3EE; border-radius: 1px; margin: 0 auto 20px; }
+  .tagline { font-family: 'JetBrains Mono'; font-size: 13px; font-weight: 500; color: #64748B; }
+
+  /* Section dividers */
+  .section-divider {
+    height: 1px;
+    margin: 0 120px;
+  }
+  .section-divider.cyan { background: linear-gradient(90deg, transparent 0%, rgba(34,211,238,0.19) 50%, transparent 100%); }
+  .section-divider.purple { background: linear-gradient(90deg, transparent 0%, rgba(139,92,246,0.19) 50%, transparent 100%); }
+  .section-divider.pink { background: linear-gradient(90deg, transparent 0%, rgba(236,72,153,0.19) 50%, transparent 100%); }
+  .section-divider.red { background: linear-gradient(90deg, transparent 0%, rgba(239,68,68,0.19) 50%, transparent 100%); }
+
+  /* Section base */
+  .section { padding: 40px 80px; }
+  .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+  .section-icon {
+    width: 32px; height: 32px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'JetBrains Mono'; font-weight: 700;
+  }
+  .section-title { font-family: 'JetBrains Mono'; font-size: 14px; font-weight: 700; letter-spacing: 2px; }
+  .section-count {
+    padding: 2px 8px; border-radius: 4px;
+    font-family: 'JetBrains Mono'; font-size: 11px; font-weight: 700; color: #0A0F1C;
+  }
+  .section-desc { font-size: 14px; color: #64748B; margin-bottom: 24px; max-width: 700px; }
+
+  /* Color themes */
+  .theme-cyan .section-icon { background: rgba(34,211,238,0.12); color: #22D3EE; font-size: 16px; }
+  .theme-cyan .section-title { color: #22D3EE; }
+  .theme-cyan .section-count { background: #22D3EE; }
+
+  .theme-teal .section-icon { background: rgba(6,182,212,0.12); color: #06B6D4; font-size: 14px; }
+  .theme-teal .section-title { color: #06B6D4; }
+  .theme-teal .section-count { background: #06B6D4; }
+
+  .theme-purple .section-icon { background: rgba(139,92,246,0.12); color: #8B5CF6; font-size: 16px; }
+  .theme-purple .section-title { color: #8B5CF6; }
+  .theme-purple .section-count { background: #8B5CF6; }
+
+  .theme-amber .section-icon { background: rgba(245,158,11,0.12); color: #F59E0B; font-size: 18px; }
+  .theme-amber .section-title { color: #F59E0B; }
+  .theme-amber .section-count { background: #F59E0B; }
+
+  .theme-green .section-icon { background: rgba(16,185,129,0.12); color: #10B981; font-size: 14px; }
+  .theme-green .section-title { color: #10B981; }
+  .theme-green .section-count { background: #10B981; }
+
+  .theme-pink .section-icon { background: rgba(236,72,153,0.12); color: #EC4899; font-size: 18px; }
+  .theme-pink .section-title { color: #EC4899; }
+  .theme-pink .section-count { background: #EC4899; }
+
+  .theme-red .section-icon { background: rgba(239,68,68,0.12); color: #EF4444; font-size: 16px; }
+  .theme-red .section-title { color: #EF4444; }
+  .theme-red .section-count { background: #EF4444; color: #fff; }
+
+  /* MCP Grid */
+  .mcp-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
+  .mcp-card {
+    background: #1E293B; border-radius: 8px; padding: 14px 16px;
+  }
+  .mcp-card h3 { font-family: 'Inter'; font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+  .mcp-card p { font-family: 'JetBrains Mono'; font-size: 11px; color: #64748B; }
+  .mcp-grid-3 { grid-template-columns: repeat(3, 1fr); }
+
+  .status-row {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #22D3EE; }
+  .status-text { font-family: 'JetBrains Mono'; font-size: 11px; font-weight: 500; color: #22D3EE; }
+
+  /* Permissions pills */
+  .perm-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+  .perm-pill {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 12px; border-radius: 6px;
+    background: rgba(6,182,212,0.06); border: 1px solid rgba(6,182,212,0.19);
+  }
+  .perm-pill .dot { width: 5px; height: 5px; border-radius: 50%; background: #06B6D4; }
+  .perm-pill span { font-family: 'JetBrains Mono'; font-size: 11px; font-weight: 600; color: #06B6D4; }
+
+  /* Two column */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .col-list {
+    background: #1E293B; border-radius: 8px; padding: 16px;
+  }
+  .col-list li {
+    font-family: 'JetBrains Mono'; font-size: 12px; font-weight: 500; color: #fff;
+    list-style: none; padding: 2px 0;
+  }
+  .col-list li::before { content: "✓ "; color: #64748B; }
+
+  /* Agents card */
+  .agent-card {
+    background: #1E293B; border-radius: 8px; padding: 16px;
+    margin-top: 12px;
+  }
+  .agent-item { margin-bottom: 8px; }
+  .agent-item:last-child { margin-bottom: 0; }
+  .agent-item h4 { font-family: 'Inter'; font-size: 13px; font-weight: 600; }
+  .agent-item p { font-family: 'JetBrains Mono'; font-size: 11px; color: #64748B; }
+
+  /* Commands grid */
+  .cmd-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .cmd-card {
+    background: #1E293B; border-radius: 8px; padding: 16px;
+  }
+  .cmd-label { font-family: 'JetBrains Mono'; font-size: 10px; font-weight: 700; color: #EC4899; letter-spacing: 2px; margin-bottom: 8px; }
+  .cmd-card code {
+    display: block; font-family: 'JetBrains Mono'; font-size: 11px; font-weight: 500; color: #94A3B8;
+    padding: 1px 0;
+  }
+
+  /* Hooks grid */
+  .hooks-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .hook-card {
+    background: #1E293B; border-radius: 8px; padding: 16px;
+    border: 1px solid rgba(239,68,68,0.19);
+  }
+  .hook-label { font-family: 'JetBrains Mono'; font-size: 10px; font-weight: 700; color: #EF4444; letter-spacing: 1px; margin-bottom: 8px; }
+  .hook-card p { font-size: 12px; color: #94A3B8; line-height: 1.4; margin-bottom: 8px; }
+  .hook-trigger { font-family: 'JetBrains Mono'; font-size: 10px; font-weight: 600; color: #64748B; }
+
+  /* Stats footer */
+  .stats-footer {
+    padding: 50px 80px 60px;
+    text-align: center;
+    background: linear-gradient(180deg, transparent 0%, #0F172A 30%, rgba(30,41,59,0.25) 100%);
+  }
+  .stats-line { height: 1px; background: #1E293B; margin-bottom: 32px; }
+  .stats-row { display: flex; justify-content: space-around; align-items: center; margin-bottom: 32px; }
+  .stat { text-align: center; }
+  .stat-num { font-family: 'JetBrains Mono'; font-size: 36px; font-weight: 700; }
+  .stat-label { font-family: 'JetBrains Mono'; font-size: 10px; font-weight: 600; color: #64748B; letter-spacing: 2px; margin-top: 4px; }
+  .footer-text { font-size: 14px; font-weight: 600; color: #94A3B8; }
+  .footer-sub { font-family: 'JetBrains Mono'; font-size: 12px; color: #475569; margin-top: 8px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="badge">
+      <span class="term">&gt;_</span>
+      <span class="label">POWER USER CONFIGURATION</span>
+    </div>
+    <h1>Claude Code</h1>
+    <p class="subtitle">Command Center</p>
+    <div class="divider-line"></div>
+    <p class="tagline">11 MCP Servers &nbsp;|&nbsp; 25 Commands &nbsp;|&nbsp; 12 Plugins &nbsp;|&nbsp; 10 Skills &nbsp;|&nbsp; 4 Safety Hooks</p>
+  </div>
+
+  <!-- DIVIDER -->
+  <div class="section-divider cyan"></div>
+
+  <!-- MCP INTEGRATIONS -->
+  <div class="section theme-cyan">
+    <div class="section-header">
+      <div class="section-icon">~</div>
+      <span class="section-title">MCP INTEGRATIONS</span>
+      <span class="section-count">11</span>
+    </div>
+    <p class="section-desc">Connected services powering an integrated workflow across design, data, communication, and sales</p>
+    <div class="mcp-grid">
+      <div class="mcp-card"><h3>Figma</h3><p>Design API</p></div>
+      <div class="mcp-card"><h3>Slack</h3><p>Messaging</p></div>
+      <div class="mcp-card"><h3>Notion</h3><p>Knowledge Base</p></div>
+      <div class="mcp-card"><h3>Asana</h3><p>Project Mgmt</p></div>
+      <div class="mcp-card"><h3>Webflow</h3><p>CMS / Sites</p></div>
+      <div class="mcp-card"><h3>Apollo</h3><p>Sales Intel</p></div>
+      <div class="mcp-card"><h3>Playwright</h3><p>Browser Auto</p></div>
+      <div class="mcp-card"><h3>Exa</h3><p>Web Search</p></div>
+    </div>
+    <div class="mcp-grid mcp-grid-3">
+      <div class="mcp-card"><h3>Knowledge Graph</h3><p>Custom MCP</p></div>
+      <div class="mcp-card"><h3>Domo</h3><p>BI Platform</p></div>
+      <div class="mcp-card"><h3>Context7</h3><p>Context Mgmt</p></div>
+    </div>
+    <div class="status-row" style="margin-top: 16px;">
+      <div class="status-dot"></div>
+      <span class="status-text">All 11 servers connected and active</span>
+    </div>
+  </div>
+
+  <!-- DIVIDER -->
+  <div class="section-divider cyan"></div>
+
+  <!-- AUTO-APPROVED PERMISSIONS -->
+  <div class="section theme-teal" style="padding-top: 30px; padding-bottom: 30px;">
+    <div class="section-header">
+      <div class="section-icon">#</div>
+      <span class="section-title">AUTO-APPROVED PERMISSIONS</span>
+    </div>
+    <div class="perm-grid">
+      <div class="perm-pill"><div class="dot"></div><span>python</span></div>
+      <div class="perm-pill"><div class="dot"></div><span>npx</span></div>
+      <div class="perm-pill"><div class="dot"></div><span>npm</span></div>
+      <div class="perm-pill"><div class="dot"></div><span>pip</span></div>
+      <div class="perm-pill"><div class="dot"></div><span>gh</span></div>
+      <div class="perm-pill"><div class="dot"></div><span>gcloud</span></div>
+      <div class="perm-pill"><div class="dot"></div><span>open</span></div>
+      <div class="perm-pill"><div class="dot"></div><span>mcp__pencil</span></div>
+    </div>
+  </div>
+
+  <!-- DIVIDER -->
+  <div class="section-divider purple"></div>
+
+  <!-- PLUGINS + SKILLS + AGENTS -->
+  <div class="section">
+    <div class="two-col">
+      <!-- Plugins -->
+      <div>
+        <div class="section-header theme-purple">
+          <div class="section-icon" style="background:rgba(139,92,246,0.12);color:#8B5CF6;">+</div>
+          <span class="section-title" style="color:#8B5CF6;">PLUGINS</span>
+          <span class="section-count" style="background:#8B5CF6;">12</span>
+        </div>
+        <div class="col-list" style="margin-top:12px;">
+          <ul>
+            <li>GitHub</li>
+            <li>Frontend Design</li>
+            <li>TypeScript LSP</li>
+            <li>Pyright LSP</li>
+            <li>Commit Commands</li>
+            <li>Code Review</li>
+            <li>Hookify</li>
+            <li>Feature Dev</li>
+            <li>Security Guidance</li>
+            <li>Claude MD Management</li>
+            <li>Skill Creator</li>
+            <li>Apollo</li>
+          </ul>
+        </div>
+      </div>
+      <!-- Skills + Agents -->
+      <div>
+        <div class="section-header theme-amber">
+          <div class="section-icon" style="background:rgba(245,158,11,0.12);color:#F59E0B;">*</div>
+          <span class="section-title" style="color:#F59E0B;">SKILLS</span>
+          <span class="section-count" style="background:#F59E0B;">10</span>
+        </div>
+        <div class="col-list" style="margin-top:12px;">
+          <ul>
+            <li>Domo API</li>
+            <li>Domo Branding</li>
+            <li>n8n Code (JS)</li>
+            <li>n8n Code (Python)</li>
+            <li>n8n Expression Syntax</li>
+            <li>n8n MCP Tools</li>
+            <li>n8n Node Config</li>
+            <li>n8n Validation</li>
+            <li>n8n Workflow Patterns</li>
+            <li>Render Video</li>
+          </ul>
+        </div>
+        <!-- Agents -->
+        <div class="section-header theme-green" style="margin-top: 24px;">
+          <div class="section-icon" style="background:rgba(16,185,129,0.12);color:#10B981;">@</div>
+          <span class="section-title" style="color:#10B981;">CUSTOM AGENTS</span>
+          <span class="section-count" style="background:#10B981;">2</span>
+        </div>
+        <div class="agent-card">
+          <div class="agent-item"><h4>Design Assistant</h4><p>Design-focused agent</p></div>
+          <div class="agent-item"><h4>Google Agent Builder</h4><p>Gemini / Vertex AI deploy</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DIVIDER -->
+  <div class="section-divider pink"></div>
+
+  <!-- CUSTOM COMMANDS -->
+  <div class="section theme-pink">
+    <div class="section-header">
+      <div class="section-icon">/</div>
+      <span class="section-title">CUSTOM COMMANDS</span>
+      <span class="section-count">25</span>
+    </div>
+    <p class="section-desc">Slash commands for design, media generation, research, and project management</p>
+    <div class="cmd-grid">
+      <div>
+        <div class="cmd-card" style="margin-bottom:12px;">
+          <div class="cmd-label">DESIGN & BUILD</div>
+          <code>/design-landing-page</code>
+          <code>/design-email-template</code>
+          <code>/design-social-asset</code>
+          <code>/design-presentation</code>
+          <code>/design-infographic</code>
+          <code>/design-banner-ad</code>
+        </div>
+        <div class="cmd-card">
+          <div class="cmd-label">MEDIA GENERATION</div>
+          <code>/generate-image</code>
+          <code>/generate-video</code>
+          <code>/edit-image</code>
+          <code>/create-icon</code>
+          <code>/create-animation</code>
+        </div>
+      </div>
+      <div>
+        <div class="cmd-card" style="margin-bottom:12px;">
+          <div class="cmd-label">RESEARCH & MESSAGING</div>
+          <code>/query-messaging</code>
+          <code>/get-product-info</code>
+          <code>/get-competitor-intel</code>
+          <code>/brand-check</code>
+        </div>
+        <div class="cmd-card" style="margin-bottom:12px;">
+          <div class="cmd-label">FIGMA</div>
+          <code>/figma-to-code</code>
+          <code>/figma-inspect</code>
+        </div>
+        <div class="cmd-card">
+          <div class="cmd-label">UTILITIES</div>
+          <code>/status &nbsp; /fix-my-setup</code>
+          <code>/new-project &nbsp; /export-project</code>
+          <code>/propose-changes</code>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DIVIDER -->
+  <div class="section-divider red"></div>
+
+  <!-- SAFETY HOOKS -->
+  <div class="section theme-red">
+    <div class="section-header">
+      <div class="section-icon">!</div>
+      <span class="section-title">SAFETY HOOKS</span>
+      <span class="section-count">4</span>
+    </div>
+    <p class="section-desc">Pre-tool-use guards that automatically intercept risky operations before they execute</p>
+    <div class="hooks-grid">
+      <div class="hook-card">
+        <div class="hook-label">ENV COMMIT BLOCK</div>
+        <p>Prevents .env files from being committed to git</p>
+        <span class="hook-trigger">Bash</span>
+      </div>
+      <div class="hook-card">
+        <div class="hook-label">PRODUCTION KG GUARD</div>
+        <p>Protects the production Knowledge Graph from modifications</p>
+        <span class="hook-trigger">Write + Edit</span>
+      </div>
+      <div class="hook-card">
+        <div class="hook-label">SSR PATTERN DETECTOR</div>
+        <p>Catches server-side rendering patterns in client-only apps</p>
+        <span class="hook-trigger">Write + Edit</span>
+      </div>
+      <div class="hook-card">
+        <div class="hook-label">CREDENTIAL DETECTOR</div>
+        <p>Blocks hardcoded secrets and credentials from being written</p>
+        <span class="hook-trigger">Write + Edit</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- STATS FOOTER -->
+  <div class="stats-footer">
+    <div class="stats-line"></div>
+    <div class="stats-row">
+      <div class="stat"><div class="stat-num" style="color:#22D3EE;">11</div><div class="stat-label">MCP SERVERS</div></div>
+      <div class="stat"><div class="stat-num" style="color:#EC4899;">25</div><div class="stat-label">COMMANDS</div></div>
+      <div class="stat"><div class="stat-num" style="color:#8B5CF6;">12</div><div class="stat-label">PLUGINS</div></div>
+      <div class="stat"><div class="stat-num" style="color:#F59E0B;">10</div><div class="stat-label">SKILLS</div></div>
+      <div class="stat"><div class="stat-num" style="color:#EF4444;">4</div><div class="stat-label">SAFETY HOOKS</div></div>
+      <div class="stat"><div class="stat-num" style="color:#10B981;">9</div><div class="stat-label">WORKSPACES</div></div>
+    </div>
+    <p class="footer-text">Built with Claude Code + Anthropic Opus 4</p>
+    <p class="footer-sub">One CLI to rule them all.</p>
+  </div>
+
+</div>
+</body>
+</html>

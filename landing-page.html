@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude Code Command Center</title>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --domo-blue: #99CCEE;
+    --neutral-50: #F1F6FA;
+    --neutral-100: #DCE4EA;
+    --neutral-200: #B7C1CB;
+    --neutral-600: #68737F;
+    --neutral-900: #3F454D;
+    --accent-orange: #FF9922;
+    --accent-purple: #776CB0;
+    --accent-pink: #C179BD;
+    --accent-mint: #ADD4C1;
+    --font-primary: 'Open Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --ease-smooth: cubic-bezier(0.83, 0, 0.17, 1);
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    --shadow-sm: 0 1px 3px rgba(63,69,77,0.08), 0 1px 2px rgba(63,69,77,0.06);
+    --shadow-md: 0 4px 12px rgba(63,69,77,0.1), 0 2px 4px rgba(63,69,77,0.06);
+    --shadow-lg: 0 8px 20px rgba(63,69,77,0.08), 0 4px 8px rgba(63,69,77,0.04);
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { font-family: var(--font-primary); font-weight: 400; color: var(--neutral-900); line-height: 1.6; background: #fff; }
+
+  /* ANIMATIONS */
+  @keyframes domoFadeInUp {
+    from { opacity: 0; transform: translateY(1.5rem); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes countUp { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
+  @keyframes pulseGlow {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(153,204,238,0.4); }
+    50% { box-shadow: 0 0 20px 4px rgba(153,204,238,0.2); }
+  }
+  @keyframes terminalBlink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
+
+  .animate-on-scroll { opacity: 0; transform: translateY(1.5rem); transition: opacity 0.6s var(--ease-out-expo), transform 0.6s var(--ease-out-expo); }
+  .animate-on-scroll.visible { opacity: 1; transform: translateY(0); }
+  .stagger > *:nth-child(1) { transition-delay: 0.05s; }
+  .stagger > *:nth-child(2) { transition-delay: 0.1s; }
+  .stagger > *:nth-child(3) { transition-delay: 0.15s; }
+  .stagger > *:nth-child(4) { transition-delay: 0.2s; }
+  .stagger > *:nth-child(5) { transition-delay: 0.25s; }
+  .stagger > *:nth-child(6) { transition-delay: 0.3s; }
+  .stagger > *:nth-child(7) { transition-delay: 0.35s; }
+  .stagger > *:nth-child(8) { transition-delay: 0.4s; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+    .animate-on-scroll { opacity: 1; transform: none; }
+  }
+
+  /* NAV */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: rgba(255,255,255,0.92); backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--neutral-100);
+    padding: 0 2rem; height: 64px; display: flex; align-items: center; justify-content: space-between;
+  }
+  .nav-brand { display: flex; align-items: center; gap: 10px; }
+  .nav-logo { font-family: var(--font-mono); font-size: 14px; font-weight: 700; color: var(--domo-blue); background: var(--neutral-50); padding: 4px 10px; border-radius: var(--radius-sm); }
+  .nav-title { font-weight: 700; font-size: 16px; color: var(--neutral-900); }
+  .nav-links { display: flex; gap: 24px; align-items: center; }
+  .nav-links a { text-decoration: none; font-size: 14px; font-weight: 600; color: var(--neutral-600); transition: color 0.3s var(--ease-smooth); }
+  .nav-links a:hover { color: var(--neutral-900); }
+  .nav-cta {
+    background: var(--accent-orange); color: #fff !important; padding: 8px 20px;
+    border-radius: var(--radius-md); font-weight: 700 !important; font-size: 13px !important;
+    transition: all 0.3s var(--ease-smooth) !important;
+  }
+  .nav-cta:hover { box-shadow: 0 4px 20px rgba(255,153,34,0.4); transform: translateY(-1px); }
+
+  /* HERO */
+  .hero {
+    padding: 140px 2rem 80px; text-align: center;
+    background: linear-gradient(180deg, var(--domo-blue) 0%, #7ab8e0 60%, var(--neutral-50) 100%);
+    position: relative; overflow: hidden;
+  }
+  .hero::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.2) 0%, transparent 60%);
+  }
+  .hero-content { position: relative; z-index: 1; max-width: 800px; margin: 0 auto; }
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 20px; border-radius: 100px;
+    background: rgba(255,255,255,0.2); backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.3); margin-bottom: 24px;
+  }
+  .hero-badge .cursor { font-family: var(--font-mono); font-weight: 700; color: #fff; }
+  .hero-badge .blink { animation: terminalBlink 1s infinite; }
+  .hero-badge span:last-child { font-family: var(--font-mono); font-size: 11px; font-weight: 600; color: #fff; letter-spacing: 2px; text-transform: uppercase; }
+  .hero h1 { font-size: clamp(2.5rem, 6vw, 4rem); font-weight: 800; color: #fff; line-height: 1.1; margin-bottom: 12px; letter-spacing: -0.02em; }
+  .hero .subtitle { font-size: clamp(1.25rem, 3vw, 1.75rem); font-weight: 300; color: rgba(255,255,255,0.85); margin-bottom: 32px; }
+  .hero-stats {
+    display: flex; justify-content: center; gap: 32px; flex-wrap: wrap;
+    padding: 20px 32px; background: rgba(255,255,255,0.15); backdrop-filter: blur(8px);
+    border-radius: var(--radius-lg); border: 1px solid rgba(255,255,255,0.2);
+    max-width: 700px; margin: 0 auto;
+  }
+  .hero-stat { text-align: center; }
+  .hero-stat .num { font-family: var(--font-mono); font-size: 24px; font-weight: 700; color: #fff; }
+  .hero-stat .label { font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.7); letter-spacing: 1.5px; text-transform: uppercase; }
+
+  /* SECTION BASE */
+  section { padding: 80px 2rem; }
+  .container { max-width: 1100px; margin: 0 auto; }
+  .section-header { text-align: center; margin-bottom: 48px; }
+  .section-tag {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: var(--font-mono); font-size: 12px; font-weight: 700;
+    letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px;
+  }
+  .section-tag .icon {
+    width: 28px; height: 28px; border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-mono); font-weight: 700; font-size: 14px;
+  }
+  .section-header h2 { font-size: clamp(1.75rem, 4vw, 2.5rem); font-weight: 700; color: var(--neutral-900); margin-bottom: 12px; }
+  .section-header p { font-size: 16px; color: var(--neutral-600); max-width: 600px; margin: 0 auto; }
+
+  /* MCP SECTION */
+  .mcp-section { background: var(--neutral-50); }
+  .mcp-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 12px; }
+  .mcp-card {
+    background: #fff; border-radius: var(--radius-lg); padding: 20px;
+    box-shadow: var(--shadow-sm); transition: all 0.3s var(--ease-smooth);
+    border: 1px solid transparent; position: relative; overflow: hidden;
+  }
+  .mcp-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: var(--domo-blue); opacity: 0; transition: opacity 0.3s var(--ease-smooth);
+  }
+  .mcp-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); border-color: var(--neutral-100); }
+  .mcp-card:hover::before { opacity: 1; }
+  .mcp-card h3 { font-size: 15px; font-weight: 700; color: var(--neutral-900); margin-bottom: 4px; }
+  .mcp-card p { font-family: var(--font-mono); font-size: 11px; color: var(--neutral-200); }
+  .mcp-status {
+    display: flex; align-items: center; gap: 8px; margin-top: 16px;
+    padding: 10px 16px; background: #fff; border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+  }
+  .mcp-status .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent-mint); animation: pulseGlow 2s infinite; }
+  .mcp-status span { font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: var(--neutral-600); }
+
+  /* PERMISSIONS */
+  .perm-section { background: #fff; }
+  .perm-grid { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+  .perm-pill {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 18px; border-radius: 100px;
+    background: var(--neutral-50); border: 1px solid var(--neutral-100);
+    transition: all 0.3s var(--ease-smooth);
+  }
+  .perm-pill:hover { border-color: var(--domo-blue); box-shadow: 0 2px 12px rgba(153,204,238,0.2); }
+  .perm-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--domo-blue); }
+  .perm-pill span { font-family: var(--font-mono); font-size: 13px; font-weight: 600; color: var(--neutral-900); }
+
+  /* PLUGINS + SKILLS */
+  .ps-section { background: var(--neutral-50); }
+  .ps-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .ps-col { }
+  .ps-card {
+    background: #fff; border-radius: var(--radius-lg); padding: 24px;
+    box-shadow: var(--shadow-sm); margin-top: 16px;
+  }
+  .ps-card ul { list-style: none; }
+  .ps-card li {
+    font-family: var(--font-mono); font-size: 13px; font-weight: 500; color: var(--neutral-900);
+    padding: 6px 0; border-bottom: 1px solid var(--neutral-50);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .ps-card li:last-child { border-bottom: none; }
+  .ps-card li .check { color: var(--accent-mint); font-weight: 700; }
+  .col-header { display: flex; align-items: center; gap: 10px; }
+  .col-header .tag {
+    font-family: var(--font-mono); font-size: 12px; font-weight: 700;
+    letter-spacing: 2px; text-transform: uppercase;
+  }
+  .col-header .count {
+    font-family: var(--font-mono); font-size: 11px; font-weight: 700;
+    padding: 2px 10px; border-radius: 100px; color: #fff;
+  }
+
+  /* AGENTS */
+  .agent-card {
+    background: #fff; border-radius: var(--radius-lg); padding: 24px;
+    box-shadow: var(--shadow-sm); margin-top: 16px;
+  }
+  .agent-item { padding: 8px 0; }
+  .agent-item + .agent-item { border-top: 1px solid var(--neutral-50); }
+  .agent-item h4 { font-size: 14px; font-weight: 700; color: var(--neutral-900); }
+  .agent-item p { font-family: var(--font-mono); font-size: 12px; color: var(--neutral-200); }
+
+  /* COMMANDS */
+  .cmd-section { background: #fff; }
+  .cmd-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .cmd-card {
+    background: var(--neutral-50); border-radius: var(--radius-lg); padding: 24px;
+    border: 1px solid var(--neutral-100); transition: all 0.3s var(--ease-smooth);
+  }
+  .cmd-card:hover { border-color: var(--domo-blue); box-shadow: 0 4px 16px rgba(153,204,238,0.15); }
+  .cmd-label {
+    font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+    letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px;
+    color: var(--accent-orange);
+  }
+  .cmd-card code {
+    display: block; font-family: var(--font-mono); font-size: 12px; font-weight: 500;
+    color: var(--neutral-600); padding: 3px 0;
+  }
+
+  /* HOOKS */
+  .hooks-section { background: var(--neutral-50); }
+  .hooks-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .hook-card {
+    background: #fff; border-radius: var(--radius-lg); padding: 24px;
+    box-shadow: var(--shadow-sm); border-left: 3px solid #E8836A;
+    transition: all 0.3s var(--ease-smooth);
+  }
+  .hook-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+  .hook-label {
+    font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+    letter-spacing: 1px; text-transform: uppercase; margin-bottom: 10px;
+    color: #E8836A;
+  }
+  .hook-card p { font-size: 13px; color: var(--neutral-600); line-height: 1.5; margin-bottom: 12px; }
+  .hook-trigger {
+    display: inline-block; font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+    color: var(--neutral-200); background: var(--neutral-50); padding: 3px 10px;
+    border-radius: 100px;
+  }
+
+  /* STATS FOOTER / CTA */
+  .cta-section {
+    background: var(--domo-blue); padding: 80px 2rem; text-align: center;
+    position: relative; overflow: hidden;
+  }
+  .cta-section::before {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 50% 100%, rgba(255,255,255,0.15) 0%, transparent 60%);
+  }
+  .cta-content { position: relative; z-index: 1; }
+  .stats-row { display: flex; justify-content: center; gap: 48px; flex-wrap: wrap; margin-bottom: 48px; }
+  .stat { text-align: center; }
+  .stat .num {
+    font-family: var(--font-mono); font-size: clamp(2rem, 5vw, 3rem); font-weight: 700; color: #fff;
+  }
+  .stat .label { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.7); letter-spacing: 2px; text-transform: uppercase; margin-top: 4px; }
+  .cta-section h2 { font-size: clamp(1.5rem, 3vw, 2rem); font-weight: 700; color: #fff; margin-bottom: 12px; }
+  .cta-section p { font-size: 16px; color: rgba(255,255,255,0.8); margin-bottom: 32px; }
+  .cta-btn {
+    display: inline-block; background: var(--accent-orange); color: #fff;
+    padding: 14px 36px; border-radius: var(--radius-md);
+    font-family: var(--font-primary); font-size: 16px; font-weight: 700;
+    text-decoration: none; transition: all 0.3s var(--ease-smooth);
+  }
+  .cta-btn:hover { box-shadow: 0 4px 20px rgba(255,153,34,0.5); transform: translateY(-2px); }
+
+  /* FOOTER */
+  footer {
+    background: var(--neutral-900); padding: 40px 2rem; text-align: center;
+  }
+  footer p { font-size: 14px; color: var(--neutral-200); }
+  footer .made-with { font-family: var(--font-mono); font-size: 12px; color: var(--neutral-600); margin-top: 8px; }
+
+  /* RESPONSIVE */
+  @media (max-width: 992px) {
+    .mcp-grid { grid-template-columns: repeat(3, 1fr); }
+    .hooks-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 768px) {
+    .mcp-grid { grid-template-columns: repeat(2, 1fr); }
+    .ps-grid, .cmd-grid { grid-template-columns: 1fr; }
+    .hooks-grid { grid-template-columns: 1fr; }
+    .hero-stats { gap: 20px; }
+    .stats-row { gap: 32px; }
+    .nav-links a:not(.nav-cta) { display: none; }
+    section { padding: 60px 1.25rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-brand">
+    <span class="nav-logo">&gt;_</span>
+    <span class="nav-title">Claude Code</span>
+  </div>
+  <div class="nav-links">
+    <a href="#integrations">Integrations</a>
+    <a href="#capabilities">Capabilities</a>
+    <a href="#commands">Commands</a>
+    <a href="#safety">Safety</a>
+    <a href="https://claude.ai" class="nav-cta">Try Claude Code</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-content animate-on-scroll">
+    <div class="hero-badge">
+      <span class="cursor">&gt;_<span class="blink">|</span></span>
+      <span>POWER USER CONFIGURATION</span>
+    </div>
+    <h1>Claude Code<br>Command Center</h1>
+    <p class="subtitle">One CLI orchestrating 11 services, 25 commands, and 4 safety guards into a unified marketing engineering workflow.</p>
+    <div class="hero-stats stagger">
+      <div class="hero-stat animate-on-scroll"><div class="num">11</div><div class="label">MCP Servers</div></div>
+      <div class="hero-stat animate-on-scroll"><div class="num">25</div><div class="label">Commands</div></div>
+      <div class="hero-stat animate-on-scroll"><div class="num">12</div><div class="label">Plugins</div></div>
+      <div class="hero-stat animate-on-scroll"><div class="num">10</div><div class="label">Skills</div></div>
+      <div class="hero-stat animate-on-scroll"><div class="num">4</div><div class="label">Safety Hooks</div></div>
+      <div class="hero-stat animate-on-scroll"><div class="num">9</div><div class="label">Workspaces</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- MCP INTEGRATIONS -->
+<section class="mcp-section" id="integrations">
+  <div class="container">
+    <div class="section-header animate-on-scroll">
+      <div class="section-tag">
+        <span class="icon" style="background:rgba(153,204,238,0.15);color:var(--domo-blue);">~</span>
+        <span style="color:var(--domo-blue);">MCP Integrations</span>
+      </div>
+      <h2>11 Connected Services</h2>
+      <p>A unified workflow spanning design, project management, communication, sales intelligence, and custom data systems.</p>
+    </div>
+    <div class="mcp-grid stagger">
+      <div class="mcp-card animate-on-scroll"><h3>Figma</h3><p>Design API</p></div>
+      <div class="mcp-card animate-on-scroll"><h3>Slack</h3><p>Messaging</p></div>
+      <div class="mcp-card animate-on-scroll"><h3>Notion</h3><p>Knowledge Base</p></div>
+      <div class="mcp-card animate-on-scroll"><h3>Asana</h3><p>Project Mgmt</p></div>
+      <div class="mcp-card animate-on-scroll"><h3>Webflow</h3><p>CMS / Sites</p></div>
+      <div class="mcp-card animate-on-scroll"><h3>Apollo</h3><p>Sales Intel</p></div>
+      <div class="mcp-card animate-on-scroll"><h3>Playwright</h3><p>Browser Automation</p></div>
+      <div class="mcp-card animate-on-scroll"><h3>Exa</h3><p>Web Search</p></div>
+    </div>
+    <div class="mcp-grid stagger" style="grid-template-columns: repeat(3, 1fr);">
+      <div class="mcp-card animate-on-scroll"><h3>Knowledge Graph</h3><p>Custom Python MCP</p></div>
+      <div class="mcp-card animate-on-scroll"><h3>Domo</h3><p>BI Platform</p></div>
+      <div class="mcp-card animate-on-scroll"><h3>Context7</h3><p>Context Mgmt</p></div>
+    </div>
+    <div class="mcp-status">
+      <div class="dot"></div>
+      <span>All 11 servers connected and active</span>
+    </div>
+  </div>
+</section>
+
+<!-- PERMISSIONS -->
+<section class="perm-section">
+  <div class="container">
+    <div class="section-header animate-on-scroll">
+      <div class="section-tag">
+        <span class="icon" style="background:rgba(153,204,238,0.15);color:var(--domo-blue);">#</span>
+        <span style="color:var(--domo-blue);">Permissions</span>
+      </div>
+      <h2>Auto-Approved Tools</h2>
+      <p>Pre-authorized CLI tools that execute without confirmation prompts for a frictionless workflow.</p>
+    </div>
+    <div class="perm-grid stagger">
+      <div class="perm-pill animate-on-scroll"><div class="dot"></div><span>python</span></div>
+      <div class="perm-pill animate-on-scroll"><div class="dot"></div><span>npx</span></div>
+      <div class="perm-pill animate-on-scroll"><div class="dot"></div><span>npm</span></div>
+      <div class="perm-pill animate-on-scroll"><div class="dot"></div><span>pip</span></div>
+      <div class="perm-pill animate-on-scroll"><div class="dot"></div><span>gh</span></div>
+      <div class="perm-pill animate-on-scroll"><div class="dot"></div><span>gcloud</span></div>
+      <div class="perm-pill animate-on-scroll"><div class="dot"></div><span>open</span></div>
+      <div class="perm-pill animate-on-scroll"><div class="dot"></div><span>mcp__pencil</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- PLUGINS + SKILLS + AGENTS -->
+<section class="ps-section" id="capabilities">
+  <div class="container">
+    <div class="section-header animate-on-scroll">
+      <h2>Plugins, Skills & Agents</h2>
+      <p>Layered intelligence — from code analysis to brand enforcement to autonomous agent deployment.</p>
+    </div>
+    <div class="ps-grid">
+      <div class="ps-col">
+        <div class="col-header">
+          <span class="icon" style="width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:rgba(119,108,176,0.15);color:var(--accent-purple);font-family:var(--font-mono);font-weight:700;">+</span>
+          <span class="tag" style="color:var(--accent-purple);">Plugins</span>
+          <span class="count" style="background:var(--accent-purple);">12</span>
+        </div>
+        <div class="ps-card">
+          <ul>
+            <li><span class="check">&#10003;</span> GitHub</li>
+            <li><span class="check">&#10003;</span> Frontend Design</li>
+            <li><span class="check">&#10003;</span> TypeScript LSP</li>
+            <li><span class="check">&#10003;</span> Pyright LSP</li>
+            <li><span class="check">&#10003;</span> Commit Commands</li>
+            <li><span class="check">&#10003;</span> Code Review</li>
+            <li><span class="check">&#10003;</span> Hookify</li>
+            <li><span class="check">&#10003;</span> Feature Dev</li>
+            <li><span class="check">&#10003;</span> Security Guidance</li>
+            <li><span class="check">&#10003;</span> Claude MD Management</li>
+            <li><span class="check">&#10003;</span> Skill Creator</li>
+            <li><span class="check">&#10003;</span> Apollo</li>
+          </ul>
+        </div>
+      </div>
+      <div class="ps-col">
+        <div class="col-header">
+          <span class="icon" style="width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:rgba(255,153,34,0.15);color:var(--accent-orange);font-family:var(--font-mono);font-weight:700;">*</span>
+          <span class="tag" style="color:var(--accent-orange);">Skills</span>
+          <span class="count" style="background:var(--accent-orange);">10</span>
+        </div>
+        <div class="ps-card">
+          <ul>
+            <li><span class="check">&#10003;</span> Domo API</li>
+            <li><span class="check">&#10003;</span> Domo Branding</li>
+            <li><span class="check">&#10003;</span> n8n Code (JS)</li>
+            <li><span class="check">&#10003;</span> n8n Code (Python)</li>
+            <li><span class="check">&#10003;</span> n8n Expression Syntax</li>
+            <li><span class="check">&#10003;</span> n8n MCP Tools</li>
+            <li><span class="check">&#10003;</span> n8n Node Config</li>
+            <li><span class="check">&#10003;</span> n8n Validation</li>
+            <li><span class="check">&#10003;</span> n8n Workflow Patterns</li>
+            <li><span class="check">&#10003;</span> Render Video</li>
+          </ul>
+        </div>
+        <div style="margin-top:24px;">
+          <div class="col-header">
+            <span class="icon" style="width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:rgba(173,212,193,0.3);color:#6BAF8D;font-family:var(--font-mono);font-weight:700;">@</span>
+            <span class="tag" style="color:#6BAF8D;">Custom Agents</span>
+            <span class="count" style="background:#6BAF8D;">2</span>
+          </div>
+          <div class="agent-card">
+            <div class="agent-item"><h4>Design Assistant</h4><p>Design-focused agent</p></div>
+            <div class="agent-item"><h4>Google Agent Builder</h4><p>Gemini / Vertex AI deploy</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CUSTOM COMMANDS -->
+<section class="cmd-section" id="commands">
+  <div class="container">
+    <div class="section-header animate-on-scroll">
+      <div class="section-tag">
+        <span class="icon" style="background:rgba(255,153,34,0.15);color:var(--accent-orange);">/</span>
+        <span style="color:var(--accent-orange);">Custom Commands</span>
+      </div>
+      <h2>25 Slash Commands</h2>
+      <p>Design, generate media, research messaging, and manage projects — all from the terminal.</p>
+    </div>
+    <div class="cmd-grid stagger">
+      <div class="cmd-card animate-on-scroll">
+        <div class="cmd-label">Design & Build</div>
+        <code>/design-landing-page</code>
+        <code>/design-email-template</code>
+        <code>/design-social-asset</code>
+        <code>/design-presentation</code>
+        <code>/design-infographic</code>
+        <code>/design-banner-ad</code>
+      </div>
+      <div class="cmd-card animate-on-scroll">
+        <div class="cmd-label">Research & Messaging</div>
+        <code>/query-messaging</code>
+        <code>/get-product-info</code>
+        <code>/get-competitor-intel</code>
+        <code>/brand-check</code>
+      </div>
+      <div class="cmd-card animate-on-scroll">
+        <div class="cmd-label">Media Generation</div>
+        <code>/generate-image</code>
+        <code>/generate-video</code>
+        <code>/edit-image</code>
+        <code>/create-icon</code>
+        <code>/create-animation</code>
+      </div>
+      <div class="cmd-card animate-on-scroll">
+        <div class="cmd-label">Figma + Utilities</div>
+        <code>/figma-to-code</code>
+        <code>/figma-inspect</code>
+        <code>/status</code>
+        <code>/fix-my-setup</code>
+        <code>/new-project</code>
+        <code>/export-project</code>
+        <code>/propose-changes</code>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SAFETY HOOKS -->
+<section class="hooks-section" id="safety">
+  <div class="container">
+    <div class="section-header animate-on-scroll">
+      <div class="section-tag">
+        <span class="icon" style="background:rgba(232,131,106,0.15);color:#E8836A;">!</span>
+        <span style="color:#E8836A;">Safety Hooks</span>
+      </div>
+      <h2>4 Pre-Tool-Use Guards</h2>
+      <p>Automated interceptors that block risky operations before they execute — credentials, SSR patterns, production data, and secrets.</p>
+    </div>
+    <div class="hooks-grid stagger">
+      <div class="hook-card animate-on-scroll">
+        <div class="hook-label">Env Commit Block</div>
+        <p>Prevents .env files from being committed to git</p>
+        <span class="hook-trigger">Bash</span>
+      </div>
+      <div class="hook-card animate-on-scroll">
+        <div class="hook-label">Production KG Guard</div>
+        <p>Protects the production Knowledge Graph from modifications</p>
+        <span class="hook-trigger">Write + Edit</span>
+      </div>
+      <div class="hook-card animate-on-scroll">
+        <div class="hook-label">SSR Pattern Detector</div>
+        <p>Catches server-side rendering patterns in client-only apps</p>
+        <span class="hook-trigger">Write + Edit</span>
+      </div>
+      <div class="hook-card animate-on-scroll">
+        <div class="hook-label">Credential Detector</div>
+        <p>Blocks hardcoded secrets and credentials from being written</p>
+        <span class="hook-trigger">Write + Edit</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA / STATS -->
+<section class="cta-section">
+  <div class="cta-content">
+    <div class="stats-row stagger">
+      <div class="stat animate-on-scroll"><div class="num" data-target="11">0</div><div class="label">MCP Servers</div></div>
+      <div class="stat animate-on-scroll"><div class="num" data-target="25">0</div><div class="label">Commands</div></div>
+      <div class="stat animate-on-scroll"><div class="num" data-target="12">0</div><div class="label">Plugins</div></div>
+      <div class="stat animate-on-scroll"><div class="num" data-target="10">0</div><div class="label">Skills</div></div>
+      <div class="stat animate-on-scroll"><div class="num" data-target="4">0</div><div class="label">Safety Hooks</div></div>
+      <div class="stat animate-on-scroll"><div class="num" data-target="9">0</div><div class="label">Workspaces</div></div>
+    </div>
+    <h2>One CLI to Rule Them All</h2>
+    <p>Built with Claude Code + Anthropic Opus 4</p>
+    <a href="https://docs.anthropic.com/en/docs/claude-code" class="cta-btn">Explore Claude Code</a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <p>Claude Code Command Center</p>
+  <p class="made-with">Powered by Anthropic &middot; Designed with Domo Toolkit</p>
+</footer>
+
+<script>
+// Scroll animations
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+    }
+  });
+}, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+
+document.querySelectorAll('.animate-on-scroll').forEach(el => observer.observe(el));
+
+// Number counter animation
+let counted = false;
+const counterObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting && !counted) {
+      counted = true;
+      document.querySelectorAll('.cta-section .num[data-target]').forEach(num => {
+        const target = parseInt(num.dataset.target);
+        let current = 0;
+        const increment = Math.ceil(target / 30);
+        const timer = setInterval(() => {
+          current += increment;
+          if (current >= target) { current = target; clearInterval(timer); }
+          num.textContent = current;
+        }, 40);
+      });
+    }
+  });
+}, { threshold: 0.3 });
+
+const ctaSection = document.querySelector('.cta-section');
+if (ctaSection) counterObserver.observe(ctaSection);
+</script>
+</body>
+</html>
